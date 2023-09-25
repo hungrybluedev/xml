@@ -4,7 +4,7 @@ import os
 import xml
 
 // All the XML files in the spec directory obtained recursively
-const spec_files = os.walk_ext('spec', 'xml')
+const spec_files = os.walk_ext(os.join_path('spec', 'local'), 'xml')
 
 fn test_can_parse_all_files() ! {
 	for file in spec_files {

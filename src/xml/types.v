@@ -3,12 +3,13 @@ module xml
 import os
 import strings
 
+pub type XMLNodeContents = XMLNode | string
+
 pub struct XMLNode {
 pub:
 	name       string            [required]
 	attributes map[string]string
-	inner_text string
-	children   []XMLNode
+	children   []XMLNodeContents
 }
 
 struct XMLDocument {
@@ -59,6 +60,47 @@ fn parse_prolog(contents string) !(Prolog, int) {
 	return Prolog{version, encoding}, offset_prolog_location
 }
 
+fn parse_inner_text_or_mixed(name string, attributes map[string]string, contents string) !(XMLNode, string) {
+	mut remaining_contents := contents
+	mut inner_contents := strings.new_builder(remaining_contents.len)
+
+	mut children := []XMLNodeContents{}
+
+	mut index := 0
+	for index < remaining_contents.len {
+		ch := remaining_contents[index]
+		match ch {
+			`<` {
+				// We are either at the start of a child node or the end of the current node
+				if remaining_contents[index..index + name.len + 3] == '</${name}>' {
+					// We are at the end of the current node
+					children << inner_contents.str().trim_space()
+					return XMLNode{
+						name: name
+						attributes: attributes
+						children: children
+					}, remaining_contents.all_after('${name}>')
+				} else {
+					// We are at the start of a child node
+					child, new_remaining := parse_single_node(remaining_contents[index..])!
+					children << inner_contents.str().trim_space()
+					children << child
+					return XMLNode{
+						name: name
+						attributes: attributes
+						children: children
+					}, new_remaining
+				}
+			}
+			else {
+				inner_contents.write_u8(ch)
+			}
+		}
+		index++
+	}
+	return error('XML node <${name}> not closed.')
+}
+
 fn parse_single_node(contents string) !(XMLNode, string) {
 	if contents[0] != `<` {
 		return error('XML node must start with "<".: ${contents}')
@@ -86,42 +128,15 @@ fn parse_single_node(contents string) !(XMLNode, string) {
 	attributes := parse_attributes(attribute_string)
 
 	// We're now looking for children OR inner text
-	remaining_contents := contents[tag_end + 1..]
+	mut remaining_contents := contents[tag_end + 1..]
 	looking_for_text := remaining_contents.trim_space()[0] != `<`
 
 	if looking_for_text {
-		mut inner_contents := strings.new_builder(remaining_contents.len)
-		mut found_left_angle := false
-		for index, ch in remaining_contents {
-			match ch {
-				`<` {
-					found_left_angle = true
-				}
-				`/` {
-					if !found_left_angle {
-						// false alarm
-						inner_contents.write_u8(ch)
-						found_left_angle = false
-						continue
-					}
-					// We've reached the end of the node
-					return XMLNode{
-						name: name
-						attributes: attributes
-						inner_text: inner_contents.str().trim_space()
-					}, remaining_contents[index + name.len + 2..]
-				}
-				else {
-					inner_contents.write_u8(ch)
-					found_left_angle = false
-				}
-			}
-		}
-		return error('XML node <${name}> not closed.')
+		return parse_inner_text_or_mixed(name, attributes, remaining_contents)
 	}
 
 	// We're looking for children
-	mut children := []XMLNode{}
+	mut children := []XMLNodeContents{}
 	mut remaining := remaining_contents
 
 	for remaining.len > 0 {
@@ -175,18 +190,20 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 	for key, value in node.attributes {
 		builder.write_string(' ${key}="${value}"')
 	}
-	if node.inner_text.len > 0 {
-		builder.write_string('>\n${indent}${original_indent}${node.inner_text}\n${indent}</${node.name}>')
-		return builder.str()
-	}
-	if node.children.len == 0 {
-		builder.write_string('/>')
-		return builder.str()
-	}
 	builder.write_string('>\n')
 	for child in node.children {
-		builder.write_string(child.pretty_str(original_indent, depth + 1))
-		builder.write_u8(`\n`)
+		match child {
+			string {
+				builder.write_string(indent)
+				builder.write_string(original_indent)
+				builder.write_string(child)
+				builder.write_u8(`\n`)
+			}
+			XMLNode {
+				builder.write_string(child.pretty_str(original_indent, depth + 1))
+				builder.write_u8(`\n`)
+			}
+		}
 	}
 	builder.write_string('${indent}</${node.name}>')
 	return builder.str()
