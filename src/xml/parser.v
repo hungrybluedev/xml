@@ -82,8 +82,12 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 		ch := remaining_contents[index]
 		match ch {
 			`<` {
-				// We are either at the start of a child node or the end of the current node
-				if remaining_contents[index..index + name.len + 3] == '</${name}>' {
+				if remaining_contents[index..index + 4] == '<!--' {
+					// We are at the start of a comment
+					comment, new_location := parse_comment(remaining_contents[index..])!
+					children << comment
+					remaining_contents = remaining_contents[new_location..]
+				} else if remaining_contents[index..index + name.len + 3] == '</${name}>' {
 					// We are at the end of the current node
 					children << inner_contents.str().trim_space()
 					return XMLNode{
@@ -94,7 +98,12 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 				} else {
 					// We are at the start of a child node
 					child, new_remaining := parse_single_node(remaining_contents[index..])!
-					children << inner_contents.str().trim_space()
+
+					text := inner_contents.str().trim_space()
+					if text.len > 0 {
+						children << text
+					}
+
 					children << child
 					remaining_contents = new_remaining
 					index = -1

@@ -10,7 +10,7 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 		builder.write_string(' ${key}="${value}"')
 	}
 	builder.write_string('>\n')
-	for child in node.children {
+	for index, child in node.children {
 		match child {
 			string {
 				builder.write_string(indent)
@@ -20,7 +20,6 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 			}
 			XMLNode {
 				builder.write_string(child.pretty_str(original_indent, depth + 1))
-				builder.write_u8(`\n`)
 			}
 			XMLComment {
 				builder.write_string(indent)
@@ -28,8 +27,11 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 				builder.write_string('<!--')
 				builder.write_string(child.text)
 				builder.write_string('-->')
-				builder.write_u8(`\n`)
+				// builder.write_u8(`\n`)
 			}
+		}
+		if index != node.children.len - 1 {
+			builder.write_u8(`\n`)
 		}
 	}
 	builder.write_string('${indent}</${node.name}>')
