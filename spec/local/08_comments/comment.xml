@@ -3,6 +3,10 @@
 <address>
   <!-- Full or first name -->
   <name>Jones</name>
+  <!-- Registered name of the company -->
   <company>ABSystems</company>
-  <phone>(046) 1233-44778</phone>
+  <phone>
+    <!-- Phone with country code -->
+    (046) 1233-44778
+  </phone>
 </address>
