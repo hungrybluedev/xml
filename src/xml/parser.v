@@ -3,6 +3,13 @@ module xml
 import os
 import strings
 
+const (
+	default_prolog_attributes = {
+		'version':  '1.0'
+		'encoding': 'UTF-8'
+	}
+)
+
 fn parse_attributes(all_attributes string) map[string]string {
 	parts := all_attributes.split_any(' \t\n')
 	mut attributes := map[string]string{}
@@ -16,6 +23,13 @@ fn parse_attributes(all_attributes string) map[string]string {
 	return attributes
 }
 
+fn parse_comment(contents string) !(XMLComment, int) {
+	// We find the nearest '-->' to the start of the comment
+	comment_end := contents.index('-->') or { return error('XML comment not closed.') }
+	comment_contents := contents[4..comment_end]
+	return XMLComment{comment_contents}, comment_end + 3
+}
+
 fn parse_prolog(contents string) !(Prolog, int) {
 	if contents[0..5] != '<?xml' {
 		// No prolog detected, return default
@@ -26,17 +40,35 @@ fn parse_prolog(contents string) !(Prolog, int) {
 
 	prolog_attributes := contents[5..prolog_ending + 5].trim_space()
 	// '?>'.len == 2 and '<?xml'.len == 5
-	offset_prolog_location := prolog_ending + 7
+	mut offset_prolog_location := prolog_ending + 7
 
-	if prolog_attributes.len == 0 {
-		// No attributes so return default prolog
-		return Prolog{}, offset_prolog_location
+	attributes := if prolog_attributes.len == 0 {
+		xml.default_prolog_attributes
+	} else {
+		parse_attributes(prolog_attributes)
 	}
 
-	attributes := parse_attributes(prolog_attributes)
 	version := attributes['version'] or { return error('XML declaration missing version.') }
 	encoding := attributes['encoding'] or { return error('XML declaration missing encoding.') }
-	return Prolog{version, encoding}, offset_prolog_location
+
+	mut comments := []XMLComment{}
+
+	for {
+		// Skip any whitespace after the prolog
+		for contents[offset_prolog_location] in [` `, `\t`, `\n`] {
+			offset_prolog_location++
+		}
+		if contents[offset_prolog_location..offset_prolog_location + 4] == '<!--' {
+			comment, new_location := parse_comment(contents[offset_prolog_location..])!
+			comments << comment
+			offset_prolog_location += new_location
+		} else if contents[offset_prolog_location] == `<` {
+			// Found the start of the root node
+			break
+		}
+	}
+
+	return Prolog{version, encoding, comments}, offset_prolog_location
 }
 
 fn parse_children(name string, attributes map[string]string, contents string) !(XMLNode, string) {
@@ -121,7 +153,6 @@ pub fn XMLDocument.parse(raw_contents string) !XMLDocument {
 
 	root_contents := contents[prolog_location..]
 	root, remaining := parse_single_node(root_contents.trim_space())!
-
 	if remaining.len > 0 {
 		return error('XML document has more than one root node or is improperly formed.')
 	}
@@ -129,6 +160,7 @@ pub fn XMLDocument.parse(raw_contents string) !XMLDocument {
 	return XMLDocument{
 		version: prolog.version
 		encoding: prolog.encoding
+		comments: prolog.comments
 		root: root
 	}
 }

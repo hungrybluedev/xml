@@ -1,6 +1,11 @@
 module xml
 
-pub type XMLNodeContents = XMLNode | string
+pub type XMLNodeContents = XMLComment | XMLNode | string
+
+pub struct XMLComment {
+pub:
+	text string [required]
+}
 
 pub struct XMLNode {
 pub:
@@ -10,13 +15,14 @@ pub:
 }
 
 struct XMLDocument {
+	Prolog
 pub:
-	version  string = '1.0'
-	encoding string = 'UTF-8'
-	root     XMLNode [required]
+	root XMLNode [required]
 }
 
 struct Prolog {
+pub:
 	version  string = '1.0'
 	encoding string = 'UTF-8'
+	comments []XMLComment
 }
