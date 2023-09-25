@@ -1,6 +1,5 @@
 # Binaries for programs and plugins
 main
-xml
 *.exe
 *.exe~
 *.so
