@@ -10,7 +10,10 @@ const (
 	}
 )
 
-fn parse_attributes(all_attributes string) map[string]string {
+fn parse_attributes(all_attributes string) !map[string]string {
+	if all_attributes.contains_u8(`<`) {
+		return error('Malformed XML. Found "<" in attribute string: "${all_attributes}"')
+	}
 	parts := all_attributes.split_any(' \t\n')
 	mut attributes := map[string]string{}
 	for part in parts {
@@ -45,7 +48,7 @@ fn parse_prolog(contents string) !(Prolog, int) {
 	attributes := if prolog_attributes.len == 0 {
 		xml.default_prolog_attributes
 	} else {
-		parse_attributes(prolog_attributes)
+		parse_attributes(prolog_attributes)!
 	}
 
 	version := attributes['version'] or { return error('XML declaration missing version.') }
@@ -97,7 +100,13 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 					}, remaining_contents.all_after('</${name}>')
 				} else {
 					// We are at the start of a child node
-					child, new_remaining := parse_single_node(remaining_contents[index..])!
+					child, new_remaining := parse_single_node(remaining_contents[index..]) or {
+						if err.msg() == 'XML node cannot start with "</".' {
+							return error('XML node <${name}> not closed.')
+						} else {
+							return err
+						}
+					}
 
 					text := inner_contents.str().trim_space()
 					if text.len > 0 {
@@ -137,12 +146,12 @@ fn parse_single_node(contents string) !(XMLNode, string) {
 		// We're not looking for children and inner text
 		return XMLNode{
 			name: name
-			attributes: parse_attributes(tag_contents[name.len..tag_contents.len - 1].trim_space())
+			attributes: parse_attributes(tag_contents[name.len..tag_contents.len - 1].trim_space())!
 		}, contents[tag_end + 1..]
 	}
 
 	attribute_string := tag_contents[name.len..].trim_space()
-	attributes := parse_attributes(attribute_string)
+	attributes := parse_attributes(attribute_string)!
 
 	return parse_children(name, attributes, contents[tag_end + 1..])
 }
