@@ -29,6 +29,14 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 				builder.write_string('-->')
 				// builder.write_u8(`\n`)
 			}
+			XMLCData {
+				builder.write_string(indent)
+				builder.write_string(original_indent)
+				builder.write_string('<![CDATA[')
+				builder.write_string(child.text)
+				builder.write_string(']]>')
+				// builder.write_u8(`\n`)
+			}
 		}
 		if index != node.children.len - 1 {
 			builder.write_u8(`\n`)

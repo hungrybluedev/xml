@@ -1,6 +1,11 @@
 module xml
 
-pub type XMLNodeContents = XMLComment | XMLNode | string
+pub type XMLNodeContents = XMLCData | XMLComment | XMLNode | string
+
+pub struct XMLCData {
+pub:
+	text string [required]
+}
 
 pub struct XMLComment {
 pub:
