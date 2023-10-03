@@ -37,6 +37,26 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 				builder.write_string(']]>')
 				// builder.write_u8(`\n`)
 			}
+			DTDEntity {
+				builder.write_string(indent)
+				builder.write_string(original_indent)
+				builder.write_string('<!ENTITY ')
+				builder.write_string(child.name)
+				builder.write_string(' ')
+				builder.write_string(child.value)
+				builder.write_string('>')
+				builder.write_u8(`\n`)
+			}
+			// DTDElement{
+			// 	builder.write_string(indent)
+			// 	builder.write_string(original_indent)
+			// 	builder.write_string('<!ELEMENT ')
+			// 	builder.write_string(child.name)
+			// 	builder.write_string(' ')
+			// 	builder.write_string(child.definition)
+			// 	builder.write_string('>')
+			// 	builder.write_u8(`\n`)
+			// }
 		}
 		if index != node.children.len - 1 {
 			builder.write_u8(`\n`)
@@ -44,6 +64,44 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 	}
 	builder.write_string('${indent}</${node.name}>')
 	return builder.str()
+}
+
+fn (entities []DTDEntity) pretty_str(indent string) string {
+	if entities.len == 0 {
+		return ''
+	}
+
+	mut builder := strings.new_builder(1024)
+	builder.write_u8(`[`)
+	builder.write_u8(`\n`)
+
+	for entity in entities {
+		builder.write_string('${indent}<!ENTITY ${entity.name} "${entity.value}">')
+		builder.write_u8(`\n`)
+	}
+	builder.write_u8(`]`)
+	return builder.str()
+}
+
+fn (doctype DocumentType) pretty_str(indent string) string {
+	match doctype.dtd {
+		string {
+			return '<!DOCTYPE ${doctype.name} SYSTEM "${doctype.dtd}">'
+		}
+		DocumentTypeDefinition {
+			if doctype.dtd.entities.len == 0 {
+				return ''
+			}
+
+			mut builder := strings.new_builder(1024)
+			builder.write_string('<!DOCTYPE ')
+			builder.write_string(doctype.name)
+			builder.write_string(' ')
+			builder.write_string(doctype.dtd.entities.pretty_str(indent))
+			builder.write_string('>')
+			return builder.str()
+		}
+	}
 }
 
 pub fn (doc XMLDocument) pretty_str(indent string) string {
@@ -60,7 +118,8 @@ pub fn (doc XMLDocument) pretty_str(indent string) string {
 	} else {
 		''
 	}
-	return '${prolog}\n${comments}${doc.root.pretty_str(indent, 0)}'
+	return '${prolog}\n${doc.doctype.pretty_str(indent)}\n${comments}${doc.root.pretty_str(indent,
+		0)}'
 }
 
 pub fn (doc XMLDocument) str() string {

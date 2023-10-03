@@ -40,6 +40,66 @@ fn parse_cdata(contents string) !(XMLCData, string) {
 	return XMLCData{cdata_contents}, contents[cdata_end + 2..]
 }
 
+fn parse_entity(contents string) !(DTDEntity, string) {
+	// We find the nearest '>' to the start of the ENTITY
+	entity_end := contents.index('>') or { return error('Entity declaration not closed.') }
+	entity_contents := contents[9..entity_end]
+
+	name := entity_contents.trim_left(' \t\\n').all_before(' ')
+	value := entity_contents.all_after_first(name).trim_space()
+
+	// TODO: Add support for SYSTEM and PUBLIC entities
+
+	return DTDEntity{name, value}, contents[entity_end + 1..]
+}
+
+fn parse_doctype(contents string) !(DocumentType, string) {
+	// We may have more < in the doctype so keep count
+	mut depth := 0
+	mut ending_location := 0
+	for i, ch in contents {
+		match ch {
+			`<` {
+				depth++
+			}
+			`>` {
+				depth--
+				if depth == 0 {
+					ending_location = i
+					break
+				}
+			}
+			else {}
+		}
+	}
+
+	if ending_location == 0 {
+		return error('DOCTYPE declaration not closed.')
+	}
+
+	doctype_end := ending_location
+	doctype_contents := contents[10..doctype_end]
+
+	name := doctype_contents.all_before(' ').trim_space()
+
+	mut list_contents := doctype_contents.all_after(' [').all_before(']').trim_space()
+	mut entities := []DTDEntity{}
+
+	for list_contents.len > 0 {
+		entity, remaining := parse_entity(list_contents)!
+		entities << entity
+		list_contents = remaining.trim_space()
+	}
+
+	return DocumentType{
+		name: name
+		dtd: DocumentTypeDefinition{
+			name: ''
+			entities: entities
+		}
+	}, contents[doctype_end + 1..]
+}
+
 fn parse_prolog(contents string) !(Prolog, string) {
 	if contents[0..5] != '<?xml' {
 		// No prolog detected, return default
@@ -62,7 +122,7 @@ fn parse_prolog(contents string) !(Prolog, string) {
 	encoding := attributes['encoding'] or { return error('XML declaration missing encoding.') }
 
 	mut comments := []XMLComment{}
-
+	mut doctype := DocumentType{}
 	mut remaining_contents := contents[offset_prolog_location..]
 
 	for {
@@ -74,13 +134,16 @@ fn parse_prolog(contents string) !(Prolog, string) {
 			comment, remaining := parse_comment(remaining_contents)!
 			comments << comment
 			remaining_contents = remaining
+		} else if remaining_contents.starts_with('<!DOCTYPE') {
+			// We are at the start of a DOCTYPE declaration
+			doctype, remaining_contents = parse_doctype(remaining_contents)!
 		} else if remaining_contents[0] == `<` {
 			// Found the start of the root node
 			break
 		}
 	}
 
-	return Prolog{version, encoding, comments}, remaining_contents
+	return Prolog{version, encoding, doctype, comments}, remaining_contents
 }
 
 fn parse_children(name string, attributes map[string]string, contents string) !(XMLNode, string) {
@@ -189,6 +252,7 @@ pub fn XMLDocument.parse(raw_contents string) !XMLDocument {
 		version: prolog.version
 		encoding: prolog.encoding
 		comments: prolog.comments
+		doctype: prolog.doctype
 		root: root
 	}
 }

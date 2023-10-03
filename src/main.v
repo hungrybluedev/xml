@@ -14,6 +14,6 @@ fn main() {
 	// 	println(doc)
 	// }
 	// doc := xml.XMLDocument.parse_file('spec/local/01_mdn_example/hello_world.xml')!
-	doc := xml.XMLDocument.parse_file('spec/local/10_missing_tag/malformed.xml')!
+	doc := xml.XMLDocument.parse_file('spec/local/12_doctype_entity/entity.xml')!
 	println(doc)
 }
