@@ -19,30 +19,30 @@ pub:
 	children   []XMLNodeContents
 }
 
-struct XMLDocument {
+pub struct XMLDocument {
 	Prolog
 pub:
 	root XMLNode [required]
 }
 
 // TODO: Add support for external entities
-struct DTDEntity {
+pub struct DTDEntity {
 	name  string [required]
 	value string [required]
 }
 
-struct DTDElement {
+pub struct DTDElement {
 	name       string [required]
 	definition string [required]
 }
 
-struct DocumentTypeDefinition {
+pub struct DocumentTypeDefinition {
 	name string [required]
 	// elements []DTDElement
 	entities []DTDEntity
 }
 
-struct DocumentType {
+pub struct DocumentType {
 	name     string
 	dtd_type string
 	dtd      DTDInfo

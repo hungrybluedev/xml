@@ -46,7 +46,7 @@ fn parse_entity(contents string) !(DTDEntity, string) {
 	entity_contents := contents[9..entity_end]
 
 	name := entity_contents.trim_left(' \t\\n').all_before(' ')
-	value := entity_contents.all_after_first(name).trim_space()
+	value := entity_contents.all_after_first(name).trim_space().trim('"\'')
 
 	// TODO: Add support for SYSTEM and PUBLIC entities
 
@@ -168,7 +168,11 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 					remaining_contents = remaining
 				} else if remaining_contents.starts_with('</${name}>') {
 					// We are at the end of the current node
-					children << inner_contents.str().trim_space()
+					collected_contents := inner_contents.str().trim_space()
+					if collected_contents.len > 0 {
+						// We have some inner text
+						children << collected_contents
+					}
 					return XMLNode{
 						name: name
 						attributes: attributes
@@ -188,7 +192,6 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 					if text.len > 0 {
 						children << text
 					}
-
 					children << child
 					remaining_contents = new_remaining
 				}
