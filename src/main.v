@@ -16,5 +16,5 @@ fn main() {
 	// }
 	// doc := xml.XMLDocument.parse_file('src/spec/local/01_mdn_example/hello_world.xml')!
 	doc := xml.XMLDocument.parse_file('src/spec/local/13_doctype_element/element.xml')!
-	println(doc)
+	println(doc.root)
 }

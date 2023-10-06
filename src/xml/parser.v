@@ -182,11 +182,15 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 					comment, remaining := parse_comment(remaining_contents)!
 					children << comment
 					remaining_contents = remaining
+					continue
+
 				} else if remaining_contents.starts_with('<![CDATA') {
 					// We are at the start of a CDATA section
 					cdata, remaining := parse_cdata(remaining_contents)!
 					children << cdata
 					remaining_contents = remaining
+					continue
+					
 				} else if remaining_contents.starts_with('</${name}>') {
 					// We are at the end of the current node
 					collected_contents := inner_contents.str().trim_space()
@@ -215,6 +219,7 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 					}
 					children << child
 					remaining_contents = new_remaining
+					continue
 				}
 			}
 			else {
