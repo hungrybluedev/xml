@@ -45,12 +45,25 @@ fn parse_entity(contents string) !(DTDEntity, string) {
 	entity_end := contents.index('>') or { return error('Entity declaration not closed.') }
 	entity_contents := contents[9..entity_end]
 
-	name := entity_contents.trim_left(' \t\\n').all_before(' ')
+	name := entity_contents.trim_left(' \t\n').all_before(' ')
 	value := entity_contents.all_after_first(name).trim_space().trim('"\'')
 
 	// TODO: Add support for SYSTEM and PUBLIC entities
 
 	return DTDEntity{name, value}, contents[entity_end + 1..]
+}
+
+fn parse_element(contents string) !(DTDElement, string) {
+	// We find the nearest '>' to the start of the ELEMENT
+	element_end := contents.index('>') or { return error('Element declaration not closed.') }
+	element_contents := contents[9..element_end]
+
+	name := element_contents.trim_left(' \t\n').all_before(' ')
+	definition := element_contents.all_after_first(name).trim_space().trim('"\'')
+
+	// TODO: Add support for SYSTEM and PUBLIC entities
+
+	return DTDElement{name, definition}, contents[element_end + 1..]
 }
 
 fn parse_doctype(contents string) !(DocumentType, string) {
@@ -83,19 +96,27 @@ fn parse_doctype(contents string) !(DocumentType, string) {
 	name := doctype_contents.all_before(' ').trim_space()
 
 	mut list_contents := doctype_contents.all_after(' [').all_before(']').trim_space()
-	mut entities := []DTDEntity{}
+	mut items := []DTDListItem{}
 
 	for list_contents.len > 0 {
-		entity, remaining := parse_entity(list_contents)!
-		entities << entity
-		list_contents = remaining.trim_space()
+		if list_contents.starts_with('<!ENTITY') {
+			entity, remaining := parse_entity(list_contents)!
+			items << entity
+			list_contents = remaining.trim_space()
+		} else if list_contents.starts_with('<!ELEMENT') {
+			element, remaining := parse_element(list_contents)!
+			items << element
+			list_contents = remaining.trim_space()
+		} else {
+			return error('Unknown DOCTYPE list item: ${list_contents}')
+		}
 	}
 
 	return DocumentType{
 		name: name
 		dtd: DocumentTypeDefinition{
 			name: ''
-			entities: entities
+			list: items
 		}
 	}, contents[doctype_end + 1..]
 }

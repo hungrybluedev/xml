@@ -59,8 +59,8 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 	return builder.str()
 }
 
-fn (entities []DTDEntity) pretty_str(indent string) string {
-	if entities.len == 0 {
+fn (list []DTDListItem) pretty_str(indent string) string {
+	if list.len == 0 {
 		return ''
 	}
 
@@ -68,8 +68,15 @@ fn (entities []DTDEntity) pretty_str(indent string) string {
 	builder.write_u8(`[`)
 	builder.write_u8(`\n`)
 
-	for entity in entities {
-		builder.write_string('${indent}<!ENTITY ${entity.name} "${entity.value}">')
+	for item in list {
+		match item {
+			DTDEntity {
+				builder.write_string('${indent}<!ENTITY ${item.name} "${item.value}">')
+			}
+			DTDElement {
+				builder.write_string('${indent}<!ELEMENT ${item.name} ${item.definition}>')
+			}
+		}
 		builder.write_u8(`\n`)
 	}
 	builder.write_u8(`]`)
@@ -82,7 +89,7 @@ fn (doctype DocumentType) pretty_str(indent string) string {
 			return '<!DOCTYPE ${doctype.name} SYSTEM "${doctype.dtd}">'
 		}
 		DocumentTypeDefinition {
-			if doctype.dtd.entities.len == 0 {
+			if doctype.dtd.list.len == 0 {
 				return ''
 			}
 
@@ -90,7 +97,7 @@ fn (doctype DocumentType) pretty_str(indent string) string {
 			builder.write_string('<!DOCTYPE ')
 			builder.write_string(doctype.name)
 			builder.write_string(' ')
-			builder.write_string(doctype.dtd.entities.pretty_str(indent))
+			builder.write_string(doctype.dtd.list.pretty_str(indent))
 			builder.write_string('>')
 			builder.write_u8(`\n`)
 			return builder.str()

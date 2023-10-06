@@ -15,8 +15,6 @@ fn main() {
 	// 	println('\n\n')
 	// }
 	// doc := xml.XMLDocument.parse_file('src/spec/local/01_mdn_example/hello_world.xml')!
-	doc := xml.XMLDocument.parse_file('src/spec/local/03_cd_catalogue/cd_catalog.xml')!
-	// println(doc)
-	println(doc.get_elements_by_tag('PRICE'))
-	println(doc.get_elements_by_tag('YEAR'))
+	doc := xml.XMLDocument.parse_file('src/spec/local/13_doctype_element/element.xml')!
+	println(doc)
 }

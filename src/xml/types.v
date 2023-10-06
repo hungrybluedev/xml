@@ -25,7 +25,8 @@ pub:
 	root XMLNode [required]
 }
 
-// TODO: Add support for external entities
+pub type DTDListItem = DTDElement | DTDEntity
+
 pub struct DTDEntity {
 	name  string [required]
 	value string [required]
@@ -39,13 +40,12 @@ pub struct DTDElement {
 pub struct DocumentTypeDefinition {
 	name string [required]
 	// elements []DTDElement
-	entities []DTDEntity
+	list []DTDListItem
 }
 
 pub struct DocumentType {
-	name     string
-	dtd_type string
-	dtd      DTDInfo
+	name string
+	dtd  DTDInfo
 }
 
 type DTDInfo = DocumentTypeDefinition | string
