@@ -20,6 +20,14 @@ fn parse_attributes(all_attributes string) !map[string]string {
 		pair_contents := part.split('=')
 		key := pair_contents[0].trim_space()
 		value := pair_contents[1].trim_space().trim('"')
+
+		if key.len == 0 {
+			return error('Malformed XML. Found empty attribute key.')
+		}
+
+		if key in attributes {
+			return error('Malformed XML. Found duplicate attribute key: ${key}')
+		}
 		attributes[key] = value
 	}
 
@@ -59,7 +67,21 @@ fn parse_element(contents string) !(DTDElement, string) {
 	element_contents := contents[9..element_end]
 
 	name := element_contents.trim_left(' \t\n').all_before(' ')
-	definition := element_contents.all_after_first(name).trim_space().trim('"\'')
+	definition_string := element_contents.all_after_first(name).trim_space().trim('"\'')
+
+	definition := if definition_string.starts_with('(') {
+		// We have a list of possible children
+
+		// Ensure that both ( and ) are present
+		if !definition_string.ends_with(')') {
+			return error('Element declaration not closed.')
+		}
+
+		definition_string.trim('()').split(',')
+	} else {
+		// Invalid definition
+		return error('Invalid element definition: ${definition_string}')
+	}
 
 	// TODO: Add support for SYSTEM and PUBLIC entities
 
@@ -164,7 +186,12 @@ fn parse_prolog(contents string) !(Prolog, string) {
 		}
 	}
 
-	return Prolog{version, encoding, doctype, comments}, remaining_contents
+	return Prolog{
+		version: version
+		encoding: encoding
+		doctype: doctype
+		comments: comments
+	}, remaining_contents
 }
 
 fn parse_children(name string, attributes map[string]string, contents string) !(XMLNode, string) {
@@ -183,14 +210,12 @@ fn parse_children(name string, attributes map[string]string, contents string) !(
 					children << comment
 					remaining_contents = remaining
 					continue
-
 				} else if remaining_contents.starts_with('<![CDATA') {
 					// We are at the start of a CDATA section
 					cdata, remaining := parse_cdata(remaining_contents)!
 					children << cdata
 					remaining_contents = remaining
 					continue
-					
 				} else if remaining_contents.starts_with('</${name}>') {
 					// We are at the end of the current node
 					collected_contents := inner_contents.str().trim_space()
@@ -260,12 +285,12 @@ fn parse_single_node(contents string) !(XMLNode, string) {
 	return parse_children(name, attributes, contents[tag_end + 1..])
 }
 
-pub fn XMLDocument.parse_file(path string) !XMLDocument {
+pub fn XMLDocument.from_file(path string) !XMLDocument {
 	contents := os.read_file(path) or { return error('Could not read file: ${path}') }
-	return XMLDocument.parse(contents)!
+	return XMLDocument.from_string(contents)!
 }
 
-pub fn XMLDocument.parse(raw_contents string) !XMLDocument {
+pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
 	contents := raw_contents.trim_space()
 	if contents.len == 0 {
 		return error('XML document is empty.')
@@ -283,5 +308,5 @@ pub fn XMLDocument.parse(raw_contents string) !XMLDocument {
 		comments: prolog.comments
 		doctype: prolog.doctype
 		root: root
-	}
+	}.validate()
 }

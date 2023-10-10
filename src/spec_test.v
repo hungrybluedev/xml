@@ -8,7 +8,7 @@ const spec_files = os.walk_ext(os.join_path('src', 'spec', 'local'), 'xml')
 
 fn test_can_parse_all_files() ! {
 	for file in spec_files {
-		doc := xml.XMLDocument.parse_file(file) or {
+		doc := xml.XMLDocument.from_file(file) or {
 			// Parsing failed. Check if this was an expected error.
 			parent := os.dir(file)
 			error_file := os.join_path(parent, 'expected_error.txt')
