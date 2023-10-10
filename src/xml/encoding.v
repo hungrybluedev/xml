@@ -34,24 +34,6 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int, reverse_enti
 				builder.write_string(child.text)
 				builder.write_string(']]>')
 			}
-			DTDEntity {
-				builder.write_string(indent)
-				builder.write_string(original_indent)
-				builder.write_string('<!ENTITY ')
-				builder.write_string(child.name)
-				builder.write_string(' ')
-				builder.write_string(child.value)
-				builder.write_string('>')
-			}
-			// DTDElement{
-			// 	builder.write_string(indent)
-			// 	builder.write_string(original_indent)
-			// 	builder.write_string('<!ELEMENT ')
-			// 	builder.write_string(child.name)
-			// 	builder.write_string(' ')
-			// 	builder.write_string(child.definition)
-			// 	builder.write_string('>')
-			// }
 		}
 		builder.write_u8(`\n`)
 	}
@@ -86,7 +68,12 @@ fn (list []DTDListItem) pretty_str(indent string) string {
 fn (doctype DocumentType) pretty_str(indent string) string {
 	match doctype.dtd {
 		string {
-			return '<!DOCTYPE ${doctype.name} SYSTEM "${doctype.dtd}">'
+			content := doctype.dtd
+			return if content.len > 0 {
+				'<!DOCTYPE ${doctype.name} SYSTEM "${content}">'
+			} else {
+				''
+			}
 		}
 		DocumentTypeDefinition {
 			if doctype.dtd.list.len == 0 {
