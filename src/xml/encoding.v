@@ -2,7 +2,7 @@ module xml
 
 import strings
 
-pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
+pub fn (node XMLNode) pretty_str(original_indent string, depth int, reverse_entities map[string]string) string {
 	mut builder := strings.new_builder(1024)
 	indent := original_indent.repeat(depth)
 	builder.write_string('${indent}<${node.name}')
@@ -15,10 +15,10 @@ pub fn (node XMLNode) pretty_str(original_indent string, depth int) string {
 			string {
 				builder.write_string(indent)
 				builder.write_string(original_indent)
-				builder.write_string(child)
+				builder.write_string(escape_text(content: child, reverse_entities: reverse_entities))
 			}
 			XMLNode {
-				builder.write_string(child.pretty_str(original_indent, depth + 1))
+				builder.write_string(child.pretty_str(original_indent, depth + 1, reverse_entities))
 			}
 			XMLComment {
 				builder.write_string(indent)
@@ -120,7 +120,7 @@ pub fn (doc XMLDocument) pretty_str(indent string) string {
 		''
 	}
 	return '${prolog}\n${doc.doctype.pretty_str(indent)}${comments}${doc.root.pretty_str(indent,
-		0)}'
+		0, doc.parsed_reverse_entities)}'
 }
 
 pub fn (doc XMLDocument) str() string {

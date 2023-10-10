@@ -13,7 +13,7 @@ fn test_escape() {
 	assert xml.escape_text(content: 'Do not escape ©.') == 'Do not escape ©.'
 
 	mut reverse_entities := xml.default_entities_reverse.clone()
-	reverse_entities[`©`] = 'copy'
+	reverse_entities['©'] = 'copy'
 	assert xml.escape_text(content: 'Do escape ©.', reverse_entities: reverse_entities) == 'Do escape &copy;.'
 }
 
@@ -34,6 +34,6 @@ fn test_unescape() ! {
 	}
 
 	mut entities := xml.default_entities.clone()
-	entities['copy'] = `©`
+	entities['copy'] = '©'
 	assert xml.unescape_text(content: 'Do unescape &copy;.', entities: entities)! == 'Do unescape ©.'
 }

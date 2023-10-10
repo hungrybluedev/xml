@@ -3,45 +3,42 @@ module xml
 import strings
 
 pub const default_entities = {
-	'lt':   `<`
-	'gt':   `>`
-	'amp':  `&`
-	'apos': `'`
-	'quot': `"`
+	'lt':   '<'
+	'gt':   '>'
+	'amp':  '&'
+	'apos': "'"
+	'quot': '"'
 }
 
 pub const default_entities_reverse = {
-	`<`: 'lt'
-	`>`: 'gt'
-	`&`: 'amp'
-	`'`: 'apos'
-	`"`: 'quot'
+	'<': 'lt'
+	'>': 'gt'
+	'&': 'amp'
+	"'": 'apos'
+	'"': 'quot'
 }
 
 [params]
 pub struct EscapeConfig {
-	content          string          [required]
-	reverse_entities map[rune]string = xml.default_entities_reverse
+	content          string            [required]
+	reverse_entities map[string]string = xml.default_entities_reverse
 }
 
 pub fn escape_text(config EscapeConfig) string {
-	mut buffer := strings.new_builder(config.content.len)
-	for ch in config.content.runes() {
-		if ch in config.reverse_entities {
-			buffer.write_u8(`&`)
-			buffer.write_string(config.reverse_entities[ch])
-			buffer.write_u8(`;`)
-		} else {
-			buffer.write_rune(ch)
-		}
+	mut flatted_entities := []string{cap: 2 * config.reverse_entities.len}
+
+	for target, replacement in config.reverse_entities {
+		flatted_entities << target
+		flatted_entities << '&' + replacement + ';'
 	}
-	return buffer.str()
+
+	return config.content.replace_each(flatted_entities)
 }
 
 [params]
 pub struct UnescapeConfig {
-	content  string          [required]
-	entities map[string]rune = xml.default_entities
+	content  string            [required]
+	entities map[string]string = xml.default_entities
 }
 
 pub fn unescape_text(config UnescapeConfig) !string {
@@ -64,7 +61,7 @@ pub fn unescape_text(config UnescapeConfig) !string {
 				// Did we find a valid entity?
 				entity := entity_buf.str()
 				if entity in config.entities {
-					buffer.write_rune(config.entities[entity])
+					buffer.write_string(config.entities[entity])
 					index += offset
 				} else {
 					return error('Unknown entity: ' + entity)
