@@ -12,7 +12,7 @@ fn test_valid_parsing() ! {
 			]
 		}
 	}
-	actual := xml.XMLDocument.parse_file(path)!
+	actual := xml.XMLDocument.from_file(path)!
 
 	assert expected == actual, 'Parsed XML document should be equal to expected XML document'
 }

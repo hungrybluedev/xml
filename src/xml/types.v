@@ -33,24 +33,24 @@ pub struct DTDEntity {
 }
 
 pub struct DTDElement {
-	name       string [required]
-	definition string [required]
+	name       string   [required]
+	definition []string [required]
 }
 
 pub struct DocumentTypeDefinition {
-	name string [required]
-	// elements []DTDElement
+	name string        [required]
 	list []DTDListItem
 }
 
 pub struct DocumentType {
 	name string
-	dtd  DTDInfo
+	dtd  DTDInfo = ''
 }
 
 type DTDInfo = DocumentTypeDefinition | string
 
 struct Prolog {
+	parsed_reverse_entities map[string]string
 pub:
 	version  string = '1.0'
 	encoding string = 'UTF-8'
