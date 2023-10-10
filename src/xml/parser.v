@@ -165,7 +165,10 @@ fn parse_prolog(contents string) !(Prolog, string) {
 	encoding := attributes['encoding'] or { return error('XML declaration missing encoding.') }
 
 	mut comments := []XMLComment{}
-	mut doctype := DocumentType{}
+	mut doctype := DocumentType{
+		name: ''
+		dtd: ''
+	}
 	mut remaining_contents := contents[offset_prolog_location..]
 
 	for {
