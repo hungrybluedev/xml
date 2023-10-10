@@ -1,6 +1,6 @@
 module xml
 
-pub type XMLNodeContents = DTDEntity | XMLCData | XMLComment | XMLNode | string
+pub type XMLNodeContents = XMLCData | XMLComment | XMLNode | string
 
 pub struct XMLCData {
 pub:
@@ -44,7 +44,7 @@ pub struct DocumentTypeDefinition {
 
 pub struct DocumentType {
 	name string
-	dtd  DTDInfo = ''
+	dtd  DTDInfo
 }
 
 type DTDInfo = DocumentTypeDefinition | string
@@ -52,8 +52,11 @@ type DTDInfo = DocumentTypeDefinition | string
 struct Prolog {
 	parsed_reverse_entities map[string]string
 pub:
-	version  string = '1.0'
-	encoding string = 'UTF-8'
-	doctype  DocumentType
+	version  string       = '1.0'
+	encoding string       = 'UTF-8'
+	doctype  DocumentType = DocumentType{
+		name: ''
+		dtd: ''
+	}
 	comments []XMLComment
 }
