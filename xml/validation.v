@@ -3,8 +3,13 @@ module xml
 fn (node XMLNode) validate(elements map[string]DTDElement, entities map[string]string) !XMLNode {
 	mut children := []XMLNodeContents{cap: node.children.len}
 
-	validate_node_children := node.name in elements
 	valid_elements := elements[node.name].definition
+	mut validate_node_children := node.name in elements
+
+	// Check if the node will match everything
+	if valid_elements.len == 1 && valid_elements[0] == '#PCDATA' {
+		validate_node_children = false
+	}
 
 	for child in node.children {
 		match child {
