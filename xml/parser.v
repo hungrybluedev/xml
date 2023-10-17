@@ -9,6 +9,7 @@ const (
 		'version':  '1.0'
 		'encoding': 'UTF-8'
 	}
+	default_string_builder_cap = 32
 )
 
 fn parse_attributes(all_attributes string) !map[string]string {
@@ -17,8 +18,8 @@ fn parse_attributes(all_attributes string) !map[string]string {
 	}
 	mut attributes := map[string]string{}
 
-	mut key_buf := strings.new_builder(128)
-	mut value_buf := strings.new_builder(128)
+	mut key_buf := strings.new_builder(xml.default_string_builder_cap)
+	mut value_buf := strings.new_builder(xml.default_string_builder_cap)
 
 	mut reading_key := true
 	mut reading_eq := false
@@ -84,7 +85,7 @@ fn parse_attributes(all_attributes string) !map[string]string {
 }
 
 fn parse_comment(mut reader io.Reader) !XMLComment {
-	mut comment_buffer := strings.new_builder(256)
+	mut comment_buffer := strings.new_builder(xml.default_string_builder_cap)
 
 	for {
 		ch := next_char(mut reader)!
@@ -110,7 +111,7 @@ fn parse_comment(mut reader io.Reader) !XMLComment {
 }
 
 fn parse_cdata(mut reader io.Reader) !XMLCData {
-	mut contents_buf := strings.new_builder(256)
+	mut contents_buf := strings.new_builder(xml.default_string_builder_cap)
 	mut found_bracket := false
 	mut found_double_bracket := false
 	for {
@@ -191,7 +192,7 @@ fn parse_element(contents string) !(DTDElement, string) {
 fn parse_doctype(mut reader io.Reader) !DocumentType {
 	// We may have more < in the doctype so keep count
 	mut depth := 1
-	mut doctype_buffer := strings.new_builder(256)
+	mut doctype_buffer := strings.new_builder(xml.default_string_builder_cap)
 
 	for {
 		ch := next_char(mut reader)!
@@ -278,7 +279,7 @@ fn parse_prolog(mut reader io.Reader) !(Prolog, u8) {
 		return error('Expecting a prolog starting with "<?xml".')
 	}
 
-	mut prolog_buffer := strings.new_builder(256)
+	mut prolog_buffer := strings.new_builder(xml.default_string_builder_cap)
 
 	// Keep reading character by character until we find the end of the prolog
 	mut found_question_mark := false
@@ -385,7 +386,7 @@ fn parse_prolog(mut reader io.Reader) !(Prolog, u8) {
 }
 
 fn parse_children(name string, attributes map[string]string, mut reader io.Reader) !XMLNode {
-	mut inner_contents := strings.new_builder(256)
+	mut inner_contents := strings.new_builder(xml.default_string_builder_cap)
 
 	mut children := []XMLNodeContents{}
 
@@ -469,7 +470,7 @@ fn parse_children(name string, attributes map[string]string, mut reader io.Reade
 
 fn parse_single_node(first_char u8, mut reader io.Reader) !XMLNode {
 	mut ch := next_char(mut reader)!
-	mut contents := strings.new_builder(256)
+	mut contents := strings.new_builder(xml.default_string_builder_cap)
 	// We're expecting an opening tag
 	if ch == `/` {
 		return error('XML node cannot start with "</".')
@@ -505,15 +506,14 @@ fn parse_single_node(first_char u8, mut reader io.Reader) !XMLNode {
 }
 
 pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
-	mut reader := StringReader{
-		contents: raw_contents
+	mut reader := FullBufferReader{
+		contents: raw_contents.bytes()
 	}
 	return XMLDocument.from_reader(mut reader)!
 }
 
 pub fn XMLDocument.from_file(path string) !XMLDocument {
 	mut file := os.open(path)!
-	// mut reader := io.new_buffered_reader(reader: file)
 	return XMLDocument.from_reader(mut file)!
 }
 
