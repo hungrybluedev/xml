@@ -1,7 +1,6 @@
 module xml
 
 import io
-import math
 
 fn next_char(mut reader io.Reader) !u8 {
 	mut buf := [u8(0)]
@@ -22,9 +21,10 @@ fn (mut fbr FullBufferReader) read(mut buf []u8) !int {
 	if fbr.position >= fbr.contents.len {
 		return 0
 	}
-	n := math.min(buf.len, fbr.contents.len - fbr.position)
-	for i := 0; i < n; i++ {
-		buf[i] = fbr.contents[fbr.position + i]
+	remaining := fbr.contents.len - fbr.position
+	n := if buf.len < remaining { buf.len } else { remaining }
+	unsafe {
+		vmemcpy(&u8(buf.data), &u8(fbr.contents.data) + fbr.position, n)
 	}
 	fbr.position += n
 	return n
