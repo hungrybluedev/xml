@@ -94,7 +94,7 @@ fn parse_comment(mut reader io.Reader) !XMLComment {
 					if next_char(mut reader)! == `>` {
 						break
 					}
-					return error('XML Commend not closed. Expected ">".')
+					return error('XML Comment not closed. Expected ">".')
 				} else {
 					comment_buffer.write_u8(ch)
 				}
@@ -489,21 +489,21 @@ fn parse_single_node(first_char u8, mut reader io.Reader) !XMLNode {
 	tag_contents := contents.str().trim_space()
 
 	parts := tag_contents.split_any(' \t\n')
-	name := parts[0]
+	name := first_char.ascii_str() + parts[0]
 
 	// Check if it is a self-closing tag
 	if tag_contents.ends_with('/') {
 		// We're not looking for children and inner text
 		return XMLNode{
 			name: name
-			attributes: parse_attributes(tag_contents[name.len - 1..tag_contents.len - 1].trim_space())!
+			attributes: parse_attributes(tag_contents[name.len - 2..tag_contents.len - 1].trim_space())!
 		}
 	}
 
-	attribute_string := tag_contents[name.len..].trim_space()
+	attribute_string := tag_contents[name.len - 1..].trim_space()
 	attributes := parse_attributes(attribute_string)!
 
-	return parse_children(first_char.ascii_str() + name, attributes, mut reader)
+	return parse_children(name, attributes, mut reader)
 }
 
 pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
@@ -536,5 +536,5 @@ pub fn XMLDocument.from_reader(mut reader io.Reader) !XMLDocument {
 		comments: prolog.comments
 		doctype: prolog.doctype
 		root: root
-	}.validate()
+	}
 }
