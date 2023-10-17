@@ -16,8 +16,8 @@ fn test_valid_parsing() {
 				xml.XMLNode{
 					name: 'title'
 					attributes: {
-						'lang': 'en'
-						'code:type':'const char*'
+						'lang':      'en'
+						'code:type': 'const char*'
 					}
 					children: ['Learning XML']
 				},
@@ -32,7 +32,7 @@ fn test_valid_parsing() {
 				xml.XMLNode{
 					name: 'price'
 					children: ['39.95']
-				}
+				},
 			]
 		}
 	}
