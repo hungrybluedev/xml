@@ -15,21 +15,6 @@ fn main() {
 	// 	println('\n\n')
 	// }
 	// doc := xml.XMLDocument.from_file('test/local/01_mdn_example/hello_world.xml')!
-	// doc := xml.XMLDocument.from_file('src/spec/local/12_doctype_entity/entity.xml')!
-	doc := xml.XMLDocument.from_string('<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE note [
-  <!ELEMENT note (to,from,heading,body)>
-  <!ELEMENT to (#PCDATA)>
-  <!ELEMENT from (#PCDATA)>
-  <!ELEMENT heading (#PCDATA)>
-  <!ELEMENT body (#PCDATA)>
-]>
-<note>
-  <to>Tove</to>
-  <from>Jani</from>
-  <heading>Reminder</heading>
-  <body>Don\'t forget me this weekend!</body>
-</note>
-')!
+	doc := xml.XMLDocument.from_file('test/gtk/Gtk-4.0.gir')!
 	println(doc)
 }
