@@ -15,21 +15,69 @@ fn parse_attributes(all_attributes string) !map[string]string {
 	if all_attributes.contains_u8(`<`) {
 		return error('Malformed XML. Found "<" in attribute string: "${all_attributes}"')
 	}
-	parts := all_attributes.split_any(' \t\n')
 	mut attributes := map[string]string{}
-	for part in parts {
-		pair_contents := part.split('=')
-		key := pair_contents[0].trim_space()
-		value := pair_contents[1].trim_space().trim('"')
 
-		if key.len == 0 {
-			return error('Malformed XML. Found empty attribute key.')
-		}
+	mut key_buf := strings.new_builder(128)
+	mut value_buf := strings.new_builder(128)
 
-		if key in attributes {
-			return error('Malformed XML. Found duplicate attribute key: ${key}')
+	mut reading_key := true
+	mut reading_eq := false
+	mut reading_value := false
+
+	mut found_quote := u8(0)
+
+	for ch in all_attributes {
+		if reading_key {
+			match ch {
+				`=` {
+					reading_key = false
+					reading_eq = true
+				}
+				else {
+					key_buf.write_u8(ch)
+				}
+			}
+		} else if reading_eq {
+			match ch {
+				`=` {
+					return error('Duplicate "=" in attribute string: "${all_attributes}"')
+				}
+				`'`, `"` {
+					found_quote = ch
+					reading_eq = false
+					reading_value = true
+				}
+				else {
+					reading_eq = false
+					reading_value = true
+					found_quote = 0
+				}
+			}
+		} else if reading_value {
+			match ch {
+				`'`, `"` {
+					if found_quote == ch {
+						// We have reached the end of the value
+						reading_value = false
+						reading_key = true
+						attributes[key_buf.str().trim_space()] = value_buf.str().trim_space()
+
+						found_quote = 0
+					} else {
+						if found_quote == 0 {
+							found_quote = ch
+						} else {
+							value_buf.write_u8(ch)
+						}
+					}
+				}
+				else {
+					value_buf.write_u8(ch)
+				}
+			}
+		} else {
+			return error('Invalid state while parsing attributes: ${all_attributes}')
 		}
-		attributes[key] = value
 	}
 
 	return attributes
@@ -269,7 +317,7 @@ fn parse_prolog(mut reader io.Reader) !(Prolog, u8) {
 	}
 
 	version := attributes['version'] or { return error('XML declaration missing version.') }
-	encoding := attributes['encoding'] or { return error('XML declaration missing encoding.') }
+	encoding := attributes['encoding'] or { 'UTF-8' }
 
 	mut comments := []XMLComment{}
 	mut doctype := DocumentType{
@@ -377,6 +425,8 @@ fn parse_children(name string, attributes map[string]string, mut reader io.Reade
 						// End of node
 						mut node_end_buffer := []u8{len: name.len + 1}
 						if reader.read(mut node_end_buffer)! != name.len + 1 {
+							dump(name)
+							dump(node_end_buffer.bytestr())
 							return error('Invalid XML. Incomplete node end.')
 						}
 						if node_end_buffer.bytestr() != '${name}>' {
@@ -442,11 +492,11 @@ fn parse_single_node(first_char u8, mut reader io.Reader) !XMLNode {
 	name := parts[0]
 
 	// Check if it is a self-closing tag
-	if tag_contents[tag_contents.len - 1] == `/` {
+	if tag_contents.ends_with('/') {
 		// We're not looking for children and inner text
 		return XMLNode{
 			name: name
-			attributes: parse_attributes(tag_contents[name.len..tag_contents.len - 1].trim_space())!
+			attributes: parse_attributes(tag_contents[name.len - 1..tag_contents.len - 1].trim_space())!
 		}
 	}
 
@@ -464,14 +514,14 @@ pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
 }
 
 pub fn XMLDocument.from_file(path string) !XMLDocument {
-	file := os.open(path)!
-	mut reader := io.new_buffered_reader(reader: file)
-	return XMLDocument.from_reader(mut reader)!
+	mut file := os.open(path)!
+	// mut reader := io.new_buffered_reader(reader: file)
+	return XMLDocument.from_reader(mut file)!
 }
 
 pub fn XMLDocument.from_reader(mut reader io.Reader) !XMLDocument {
 	prolog, first_char := parse_prolog(mut reader) or {
-		if err is io.Eof || err.msg() == 'Unexpected End Of File.' {
+		if err is os.Eof || err is io.Eof || err.msg() == 'Unexpected End Of File.' {
 			return error('XML document is empty.')
 		} else {
 			return err
