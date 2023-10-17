@@ -513,8 +513,10 @@ pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
 }
 
 pub fn XMLDocument.from_file(path string) !XMLDocument {
-	mut file := os.open(path)!
-	return XMLDocument.from_reader(mut file)!
+	mut reader := FullBufferReader{
+		contents: os.read_bytes(path)!
+	}
+	return XMLDocument.from_reader(mut reader)!
 }
 
 pub fn XMLDocument.from_reader(mut reader io.Reader) !XMLDocument {
