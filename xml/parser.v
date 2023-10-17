@@ -425,8 +425,6 @@ fn parse_children(name string, attributes map[string]string, mut reader io.Reade
 						// End of node
 						mut node_end_buffer := []u8{len: name.len + 1}
 						if reader.read(mut node_end_buffer)! != name.len + 1 {
-							dump(name)
-							dump(node_end_buffer.bytestr())
 							return error('Invalid XML. Incomplete node end.')
 						}
 						if node_end_buffer.bytestr() != '${name}>' {
@@ -496,7 +494,7 @@ fn parse_single_node(first_char u8, mut reader io.Reader) !XMLNode {
 		// We're not looking for children and inner text
 		return XMLNode{
 			name: name
-			attributes: parse_attributes(tag_contents[name.len - 2..tag_contents.len - 1].trim_space())!
+			attributes: parse_attributes(tag_contents[name.len - 1..tag_contents.len].trim_space())!
 		}
 	}
 
