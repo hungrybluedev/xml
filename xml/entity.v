@@ -24,15 +24,17 @@ pub struct EscapeConfig {
 	reverse_entities map[string]string = xml.default_entities_reverse
 }
 
+// escape_text replaces all entities in the given string with their respective
+// XML entity strings. See default_entities, which can be overridden.
 pub fn escape_text(config EscapeConfig) string {
-	mut flatted_entities := []string{cap: 2 * config.reverse_entities.len}
+	mut flattened_entities := []string{cap: 2 * config.reverse_entities.len}
 
 	for target, replacement in config.reverse_entities {
-		flatted_entities << target
-		flatted_entities << '&' + replacement + ';'
+		flattened_entities << target
+		flattened_entities << '&' + replacement + ';'
 	}
 
-	return config.content.replace_each(flatted_entities)
+	return config.content.replace_each(flattened_entities)
 }
 
 [params]
@@ -41,6 +43,8 @@ pub struct UnescapeConfig {
 	entities map[string]string = xml.default_entities
 }
 
+// unescape_text replaces all entities in the given string with their respective
+// original characters or strings. See default_entities_reverse, which can be overridden.
 pub fn unescape_text(config UnescapeConfig) !string {
 	mut buffer := strings.new_builder(config.content.len)
 	mut index := 0

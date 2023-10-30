@@ -54,10 +54,13 @@ fn (node XMLNode) get_elements_by_tag(tag string) []XMLNode {
 	return result
 }
 
+// get_element_by_id returns the first element with the given id, or none if no
+// such element exists.
 pub fn (doc XMLDocument) get_element_by_id(id string) ?XMLNode {
 	return doc.root.get_element_by_id(id)
 }
 
+// get_elements_by_tag returns all elements with the given tag name.
 pub fn (doc XMLDocument) get_elements_by_tag(tag string) []XMLNode {
 	return doc.root.get_elements_by_tag(tag)
 }

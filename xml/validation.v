@@ -39,6 +39,9 @@ fn (node XMLNode) validate(elements map[string]DTDElement, entities map[string]s
 	}
 }
 
+// validate checks the document is well-formed and valid. It returns a new
+// document with the parsed entities expanded when validation is successful.
+// Otherwise it returns an error.
 pub fn (doc XMLDocument) validate() !XMLDocument {
 	// The document is well-formed because we were able to parse it properly.
 	match doc.doctype.dtd {

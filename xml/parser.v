@@ -505,6 +505,7 @@ fn parse_single_node(first_char u8, mut reader io.Reader) !XMLNode {
 	return parse_children(name, attributes, mut reader)
 }
 
+// XMLDocument.from_string parses an XML document from a string.
 pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
 	mut reader := FullBufferReader{
 		contents: raw_contents.bytes()
@@ -512,6 +513,8 @@ pub fn XMLDocument.from_string(raw_contents string) !XMLDocument {
 	return XMLDocument.from_reader(mut reader)!
 }
 
+// XMLDocument.from_file parses an XML document from a file. Note that the file is read in its entirety
+// and then parsed. If the file is too large, try using the XMLDocument.from_reader function instead.
 pub fn XMLDocument.from_file(path string) !XMLDocument {
 	mut reader := FullBufferReader{
 		contents: os.read_bytes(path)!
@@ -519,6 +522,8 @@ pub fn XMLDocument.from_file(path string) !XMLDocument {
 	return XMLDocument.from_reader(mut reader)!
 }
 
+// XMLDocument.from_reader parses an XML document from a reader. This is the most generic way to parse
+// an XML document from any arbitrary source that implements that io.Reader interface.
 pub fn XMLDocument.from_reader(mut reader io.Reader) !XMLDocument {
 	prolog, first_char := parse_prolog(mut reader) or {
 		if err is os.Eof || err is io.Eof || err.msg() == 'Unexpected End Of File.' {

@@ -12,6 +12,9 @@ pub:
 	text string [required]
 }
 
+// XMLNode represents a single XML node. It contains the node name,
+// a map of attributes, and a list of children. The children can be
+// other XML nodes, CDATA, plain text, or comments.
 pub struct XMLNode {
 pub:
 	name       string            [required]
@@ -19,6 +22,12 @@ pub:
 	children   []XMLNodeContents
 }
 
+// XMLDocument is the struct that represents a single XML document.
+// It contains the prolog and the single root node. The prolog struct
+// is embedded into the XMLDocument struct, so that the prolog fields
+// are accessible directly from the this struct.
+// Public prolog fields include version, enccoding, comments preceding
+// the root node, and the document type definition.
 pub struct XMLDocument {
 	Prolog
 pub:
