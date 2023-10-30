@@ -52,14 +52,14 @@ pub struct DocumentTypeDefinition {
 }
 
 pub struct DocumentType {
-	name string
+	name string  [required]
 	dtd  DTDInfo
 }
 
 type DTDInfo = DocumentTypeDefinition | string
 
 struct Prolog {
-	parsed_reverse_entities map[string]string
+	parsed_reverse_entities map[string]string = default_entities_reverse.clone()
 pub:
 	version  string       = '1.0'
 	encoding string       = 'UTF-8'
