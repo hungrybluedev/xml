@@ -1,3 +1,7 @@
+# UPDATE: This project is now archived
+
+The work done here has been incorporated into the V Standard Library: https://github.com/vlang/v/pull/19708
+
 ## Description
 
 `xml` is a module to parse XML documents into a tree structure. It also supports
